@@ -184,6 +184,39 @@ Value RenameFile(const CallbackInfo& info) {
 	}
 }
 
+Value RenameFolder(const CallbackInfo& info){
+	Env env = info.Env();
+	if (info.Length() < 3) {
+		TypeError::New(env, "Missing arguments").ThrowAsJavaScriptException();
+		return env.Null();
+	}
+
+	std::string path = info[0].As<String>().ToString();
+	std::string newName = info[1].As<String>().ToString();
+	bool isOverwrite = info[3].As<Boolean>().IsBoolean();
+
+	try
+	{
+		if (isOverwrite)
+		{
+			fs::copy(pathFrom, pathTo, fs::copy_options::recursive | fs::copy_options::overwrite_existing);
+			fs::remove_all(path);
+		}
+		else
+		{
+			fs::copy(pathFrom, pathTo, fs::copy_options::recursive | fs::copy_options::skip_existing);
+			fs::remove_all(path);
+		}
+
+		return Boolean::New(env, true);
+	}
+	catch (fs::filesystem_error const& e)
+	{
+		return Boolean::New(env, false);
+	}
+
+}
+
 Value CopyFileFromPath(const CallbackInfo& info) {
 	Env env = info.Env();
 	if (info.Length() < 3) {
@@ -320,6 +353,8 @@ Object Init(Env env, Object exports) {
   exports.Set(String::New(env, "renameFile"),
 			  Function::New(env, RenameFile));
 
+  exports.Set(String::New(env, "renameFolder"),
+			  Function::New(env, RenameFolder));
 
 
   return exports;

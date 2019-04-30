@@ -36,8 +36,12 @@ module.exports = {
 	 * @param {string} path 
 	 * @param {string} newName 
 	 */
-  rename: function (path, newName) {
-    return addon.renameFile(path, newName, true)
+  rename: function (isDir, path, newName, override) {
+      if (isDir) {
+          return addon.renameFolder(path, newName, override)
+      } else {
+          return addon.renameFile(path, newName, override)
+      }
   },
 
 	/**
