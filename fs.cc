@@ -3,6 +3,7 @@
 
 #include <windows.h>
 #include <stdio.h>
+#include <fstream>
 #include <time.h>
 #include <sys/stat.h>
 
@@ -27,7 +28,7 @@ Value ConvertTimeToDate(Env env, time_t &time) {
 		mon = mon + 1;
 	}
 
-	dateObj.Set("year", ptm->tm_year);
+	dateObj.Set("year", ptm->tm_year + 1900);
 	dateObj.Set("month", mon);
 	dateObj.Set("day", ptm->tm_mday);
 	dateObj.Set("hour", (ptm->tm_hour + MSK) % 24);
@@ -83,8 +84,6 @@ Object InfoFile(Env env, fs::path filePath) {
 		// TODO: if error
 	}
 
-	
-	
 	fileInfo.Set("createTime", ConvertTimeToDate(env, fileStatInfo.st_ctime));
 	fileInfo.Set("modifyTime", ConvertTimeToDate(env, fileStatInfo.st_mtime));
 
@@ -139,6 +138,17 @@ Value CreateFileFromPath(const CallbackInfo& info) {
 		TypeError::New(env, "Missing arguments").ThrowAsJavaScriptException();
 		return env.Null();
 	}
+	std::string arg0 = info[0].As<Napi::String>().ToString();
+	
+	std::fstream file;
+	file.open(arg0, std::ios::out);
+
+	if (!file)
+	{
+		return Boolean::New(env, false);
+	}
+
+	file.close();
 
 	return Boolean::New(env, true);
 }
@@ -344,7 +354,10 @@ Object Init(Env env, Object exports) {
   exports.Set(String::New(env, "createFolder"),
 			  Function::New(env, CreateFolderFromPath));
 
-  exports.Set(String::New(env, "copyFolder"),
+	exports.Set(String::New(env, "createFile"),
+				Function::New(env, CreateFileFromPath));
+
+	exports.Set(String::New(env, "copyFolder"),
 			  Function::New(env, CopyFolderFromPath));
 
   exports.Set(String::New(env, "copyFile"),
