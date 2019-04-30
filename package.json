@@ -4,7 +4,7 @@
   "description": "native filesystem for node js ",
   "main": "index.js",
   "scripts": {
-    "preinstall": "npm i"
+    "install": "npm i"
   },
   "homepage": "https://github.com/Toerodor/filesystem-native",
   "keywords": [
