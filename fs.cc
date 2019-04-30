@@ -199,12 +199,12 @@ Value RenameFolder(const CallbackInfo& info){
 	{
 		if (isOverwrite)
 		{
-			fs::copy(pathFrom, pathTo, fs::copy_options::recursive | fs::copy_options::overwrite_existing);
+			fs::copy(path, newName, fs::copy_options::recursive | fs::copy_options::overwrite_existing);
 			fs::remove_all(path);
 		}
 		else
 		{
-			fs::copy(pathFrom, pathTo, fs::copy_options::recursive | fs::copy_options::skip_existing);
+			fs::copy(path, newName, fs::copy_options::recursive | fs::copy_options::skip_existing);
 			fs::remove_all(path);
 		}
 
