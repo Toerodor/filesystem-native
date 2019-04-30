@@ -40,11 +40,40 @@ Value ConvertTimeToDate(Env env, time_t &time) {
 
 Value InfoDiskInSysten(const CallbackInfo& info) {
 	Env env = info.Env();
-	SYSTEM_INFO siSysInfo;
-	GetSystemInfo(&siSysInfo);
+	//SYSTEM_INFO siSysInfo;
+	//GetSystemInfo(&siSysInfo);
 
 	Object sysInfo = Object::New(env);
-	sysInfo.Set("test", "");
+	//sysInfo.Set("test", "");
+	
+	wchar_t disks[256];
+	wchar_t* disk;
+	DWORD sizebuf = 256;
+	GetLogicalDriveStringsW(sizebuf, disks);
+	disk = disks;
+
+	while (*disk)
+	{
+		std::wstring ws(disk);
+		std::string str(ws.begin(), ws.end());
+
+		Object diskInf = Object::New(env);
+
+		fs::space_info spaceInfo = fs::space(str);
+
+		const uintmax_t available = spaceInfo.available;
+		diskInf.Set("available", available);
+
+		const uintmax_t capacity = spaceInfo.capacity;
+		diskInf.Set("capacity", capacity);
+
+		const uintmax_t free = spaceInfo.free;
+		diskInf.Set("free", free);
+
+		sysInfo.Set(str, diskInf);
+		disk = disk + wcslen(disk) + 1;
+	}
+
 
 	return sysInfo;
 }
@@ -315,17 +344,6 @@ Value InfoFolderFromPath(const CallbackInfo& info) {
 	{
 		return arr;
 	}
-
-
-	// check size
-	/*fs::space_info spaceInfo = fs::space(filePath);
-
-	const uintmax_t fileAvailable = spaceInfo.available;
-	const uintmax_t fileCapacity = spaceInfo.capacity;
-	const uintmax_t fileFree = spaceInfo.free;*/
-	/////////////
-
-	// return fileInfo;
 }
 
 String Method(const CallbackInfo& info) {
@@ -342,7 +360,7 @@ Object Init(Env env, Object exports) {
   exports.Set(String::New(env, "folderInfo"),
 			  Function::New(env, InfoFolderFromPath));
 
-  exports.Set(String::New(env, "sysInfo"),
+  exports.Set(String::New(env, "diskInfo"),
 			  Function::New(env, InfoDiskInSysten));
 
   exports.Set(String::New(env, "deleteFile"),
