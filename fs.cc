@@ -13,6 +13,8 @@
 namespace fs = std::experimental::filesystem;
 using namespace Napi;
 
+static int _timeZone = 0;
+
 Value ConvertTimeToDate(Env env, time_t &time) {
 	Object dateObj = Object::New(env);
 	struct tm* ptm;
@@ -31,7 +33,7 @@ Value ConvertTimeToDate(Env env, time_t &time) {
 	dateObj.Set("year", ptm->tm_year + 1900);
 	dateObj.Set("month", mon);
 	dateObj.Set("day", ptm->tm_mday);
-	dateObj.Set("hour", (ptm->tm_hour + MSK) % 24);
+	dateObj.Set("hour", (ptm->tm_hour + _timeZone) % 24);
 	dateObj.Set("minuts", ptm->tm_min);
 	dateObj.Set("seconds", ptm->tm_sec);
 
@@ -80,28 +82,23 @@ Value InfoDiskInSysten(const CallbackInfo& info) {
 
 Object InfoFile(Env env, fs::path filePath) {
 	Object fileInfo = Object::New(env);
-	// check on dir
+
 	const bool isDir = fs::is_directory(filePath);
 	fileInfo.Set("isDir", isDir);
 
-	// parent directory
 	const fs::path parentDir = filePath.parent_path();
 	fileInfo.Set("parent", parentDir.u8string());
 
-	// full filename
 	const fs::path fileFullName = filePath.filename();
 	fileInfo.Set("fullName", fileFullName.u8string());
 
-	// filename without ext
 	if (!isDir) {
 		const fs::path fileName = filePath.stem();
 		fileInfo.Set("name", fileName.u8string());
 
-		// extension
 		const fs::path fileExtension = filePath.extension();
 		fileInfo.Set("ext", fileExtension.u8string());
 
-		// file size
 		const int fileSize = fs::file_size(filePath);
 		fileInfo.Set("size", fileSize);
 	}
@@ -116,7 +113,6 @@ Object InfoFile(Env env, fs::path filePath) {
 	fileInfo.Set("createTime", ConvertTimeToDate(env, fileStatInfo.st_ctime));
 	fileInfo.Set("modifyTime", ConvertTimeToDate(env, fileStatInfo.st_mtime));
 
-	// root
 	const fs::path fileRootPath = filePath.root_path();
 	fileInfo.Set("root", fileRootPath.string());
 
@@ -319,7 +315,7 @@ Value CopyFolderFromPath(const CallbackInfo& info) {
 Value InfoFolderFromPath(const CallbackInfo& info) {
 	Env env = info.Env();
 
-	 if (info.Length() < 1) {
+	 if (info.Length() < 2) {
 	 	TypeError::New(env, "Missing arguments").ThrowAsJavaScriptException();
 	 	return env.Null();
 	 }
@@ -327,6 +323,8 @@ Value InfoFolderFromPath(const CallbackInfo& info) {
 	std::string arg0 = info[0].As<Napi::String>().ToString();
 	fs::path filePath = fs::path(arg0);
 	Object arr = Object::New(env);
+
+	_timeZone = info[1].As<Napi::Number>().ToNumber();
 
 	try 
 	{

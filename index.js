@@ -59,9 +59,10 @@ module.exports = {
 
 	/**
 	 * Scan folder and return object with files
-	 * @param {string} path 
+	 * @param {string} path
+	 * @param {number} timeZone
 	 */
-  scanDir: function (path) {
-    return addon.folderInfo(path)
+  scanDir: function (path, timeZone) {
+    return addon.folderInfo(path, timeZone)
   }
 };
