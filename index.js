@@ -76,9 +76,6 @@ module.exports = {
   },
 
   diskInfo: function () {
-    let obj = addon.diskInfo();
-    return Object.keys(obj).map(function (key) {
-      return obj[key];
-    });
+    return addon.diskInfo();
   }
 };
