@@ -8,7 +8,6 @@
 #include <sys/stat.h>
 
 #pragma comment(lib, "user32.lib")
-#define MSK (+3) 
 
 namespace fs = std::experimental::filesystem;
 using namespace Napi;
@@ -40,7 +39,31 @@ Value ConvertTimeToDate(Env env, time_t &time) {
 	return dateObj;
 }
 
-Value InfoDiskInSysten(const CallbackInfo& info) {
+Value ChechOnFolder(const CallbackInfo& info) {
+	Env env = info.Env();
+
+	if (info.Length() < 1) {
+		TypeError::New(env, "Missing arguments {path}").ThrowAsJavaScriptException();
+		return env.Null();
+	}
+
+	std::string path = info[0].As<Napi::String>().ToString();
+	
+	try
+	{
+		if (fs::is_directory(path))
+			return Boolean::New(env, true);
+		else 
+			return Boolean::New(env, false);
+	}
+	catch (fs::filesystem_error const& e)
+	{
+		return env.Null();
+	}
+}
+
+
+Value InfoDiskInSystem(const CallbackInfo& info) {
 	Env env = info.Env();
 	//SYSTEM_INFO siSysInfo;
 	//GetSystemInfo(&siSysInfo);
@@ -122,14 +145,14 @@ Object InfoFile(Env env, fs::path filePath) {
 Value DeleteFileFromPath(const CallbackInfo& info) {
 	Env env = info.Env();
 	if (info.Length() < 1) {
-		TypeError::New(env, "Missing arguments").ThrowAsJavaScriptException();
+		TypeError::New(env, "Missing arguments {path}").ThrowAsJavaScriptException();
 		return env.Null();
 	}
-	std::string arg0 = info[0].As<Napi::String>().ToString();
+	std::string path = info[0].As<Napi::String>().ToString();
 
 	try 
 	{
-		fs::remove(fs::path(arg0));
+		fs::remove(fs::path(path));
 		return Boolean::New(env, true);
 	}
 	catch (fs::filesystem_error const& e) 
@@ -141,14 +164,14 @@ Value DeleteFileFromPath(const CallbackInfo& info) {
 Value DeleteFolderFromPath(const CallbackInfo& info) {
 	Env env = info.Env();
 	if (info.Length() < 1) {
-		TypeError::New(env, "Missing arguments").ThrowAsJavaScriptException();
+		TypeError::New(env, "Missing arguments {path}").ThrowAsJavaScriptException();
 		return env.Null();
 	}
-	std::string arg0 = info[0].As<Napi::String>().ToString();
+	std::string path = info[0].As<Napi::String>().ToString();
 	
 	try
 	{
-		fs::remove_all(fs::path(arg0));
+		fs::remove_all(fs::path(path));
 		return Boolean::New(env, true);
 	}
 	catch (fs::filesystem_error const& e)
@@ -160,13 +183,13 @@ Value DeleteFolderFromPath(const CallbackInfo& info) {
 Value CreateFileFromPath(const CallbackInfo& info) {
 	Env env = info.Env();
 	if (info.Length() < 1) {
-		TypeError::New(env, "Missing arguments").ThrowAsJavaScriptException();
+		TypeError::New(env, "Missing arguments {path}").ThrowAsJavaScriptException();
 		return env.Null();
 	}
-	std::string arg0 = info[0].As<Napi::String>().ToString();
+	std::string path = info[0].As<Napi::String>().ToString();
 	
 	std::fstream file;
-	file.open(arg0, std::ios::out);
+	file.open(path, std::ios::out);
 
 	if (!file)
 	{
@@ -181,14 +204,14 @@ Value CreateFileFromPath(const CallbackInfo& info) {
 Value CreateFolderFromPath(const CallbackInfo& info) {
 	Env env = info.Env();
 	if (info.Length() < 1) {
-		TypeError::New(env, "Missing arguments").ThrowAsJavaScriptException();
+		TypeError::New(env, "Missing arguments {path}").ThrowAsJavaScriptException();
 		return env.Null();
 	}
-	std::string arg0 = info[0].As<Napi::String>().ToString();
+	std::string path = info[0].As<Napi::String>().ToString();
 	
 	try
 	{
-		fs::create_directory(arg0);
+		fs::create_directory(path);
 		return Boolean::New(env, true);
 	}
 	catch (fs::filesystem_error const& e)
@@ -199,8 +222,20 @@ Value CreateFolderFromPath(const CallbackInfo& info) {
 
 Value RenameFile(const CallbackInfo& info) {
 	Env env = info.Env();
-	if (info.Length() < 3) {
-		TypeError::New(env, "Missing arguments").ThrowAsJavaScriptException();
+
+	if (info.Length() < 1)
+	{
+		TypeError::New(env, "Missing arguments {pathFrom}").ThrowAsJavaScriptException();
+		return env.Null();
+	}
+	else if (info.Length() < 2)
+	{
+		TypeError::New(env, "Missing arguments {pathTo}").ThrowAsJavaScriptException();
+		return env.Null();
+	}
+	else if (info.Length() < 3)
+	{
+		TypeError::New(env, "Missing arguments {isOverwrite}").ThrowAsJavaScriptException();
 		return env.Null();
 	}
 
@@ -221,8 +256,20 @@ Value RenameFile(const CallbackInfo& info) {
 
 Value RenameFolder(const CallbackInfo& info){
 	Env env = info.Env();
-	if (info.Length() < 3) {
-		TypeError::New(env, "Missing arguments").ThrowAsJavaScriptException();
+	
+	if (info.Length() < 1)
+	{
+		TypeError::New(env, "Missing arguments {path}").ThrowAsJavaScriptException();
+		return env.Null();
+	}
+	else if (info.Length() < 2)
+	{
+		TypeError::New(env, "Missing arguments {newName}").ThrowAsJavaScriptException();
+		return env.Null();
+	}
+	else if (info.Length() < 3)
+	{
+		TypeError::New(env, "Missing arguments {isOverwrite}").ThrowAsJavaScriptException();
 		return env.Null();
 	}
 
@@ -254,8 +301,20 @@ Value RenameFolder(const CallbackInfo& info){
 
 Value CopyFileFromPath(const CallbackInfo& info) {
 	Env env = info.Env();
-	if (info.Length() < 3) {
-		TypeError::New(env, "Missing arguments").ThrowAsJavaScriptException();
+
+	if (info.Length() < 1)
+	{
+		TypeError::New(env, "Missing arguments {pathFrom}").ThrowAsJavaScriptException();
+		return env.Null();
+	}
+	else if (info.Length() < 2)
+	{
+		TypeError::New(env, "Missing arguments {pathTo}").ThrowAsJavaScriptException();
+		return env.Null();
+	}
+	else if (info.Length() < 3)
+	{
+		TypeError::New(env, "Missing arguments {isOverwrite}").ThrowAsJavaScriptException();
 		return env.Null();
 	}
 
@@ -284,8 +343,20 @@ Value CopyFileFromPath(const CallbackInfo& info) {
 
 Value CopyFolderFromPath(const CallbackInfo& info) {
 	Env env = info.Env();
-	if (info.Length() < 3) {
-		TypeError::New(env, "Missing arguments").ThrowAsJavaScriptException();
+
+	if (info.Length() < 1) 
+	{
+		TypeError::New(env, "Missing arguments {pathFrom}").ThrowAsJavaScriptException();
+		return env.Null();
+	}
+	else if (info.Length() < 2) 
+	{
+		TypeError::New(env, "Missing arguments {pathTo}").ThrowAsJavaScriptException();
+		return env.Null();
+	}
+	else if (info.Length() < 3) 
+	{
+		TypeError::New(env, "Missing arguments {isOverwrite}").ThrowAsJavaScriptException();
 		return env.Null();
 	}
 
@@ -315,9 +386,14 @@ Value CopyFolderFromPath(const CallbackInfo& info) {
 Value InfoFolderFromPath(const CallbackInfo& info) {
 	Env env = info.Env();
 
-	 if (info.Length() < 2) {
-	 	TypeError::New(env, "Missing arguments").ThrowAsJavaScriptException();
+	 if (info.Length() < 1) {
+	 	TypeError::New(env, "Missing arguments {path}").ThrowAsJavaScriptException();
 	 	return env.Null();
+	 }
+
+	 if (info.Length() < 2) {
+		 TypeError::New(env, "Missing arguments {timeZone}").ThrowAsJavaScriptException();
+		 return env.Null();
 	 }
 
 	std::string arg0 = info[0].As<Napi::String>().ToString();
@@ -359,7 +435,7 @@ Object Init(Env env, Object exports) {
 			  Function::New(env, InfoFolderFromPath));
 
   exports.Set(String::New(env, "diskInfo"),
-			  Function::New(env, InfoDiskInSysten));
+			  Function::New(env, InfoDiskInSystem));
 
   exports.Set(String::New(env, "deleteFile"),
 			  Function::New(env, DeleteFileFromPath));
@@ -370,10 +446,10 @@ Object Init(Env env, Object exports) {
   exports.Set(String::New(env, "createFolder"),
 			  Function::New(env, CreateFolderFromPath));
 
-	exports.Set(String::New(env, "createFile"),
-				Function::New(env, CreateFileFromPath));
+  exports.Set(String::New(env, "createFile"),
+			  Function::New(env, CreateFileFromPath));
 
-	exports.Set(String::New(env, "copyFolder"),
+  exports.Set(String::New(env, "copyFolder"),
 			  Function::New(env, CopyFolderFromPath));
 
   exports.Set(String::New(env, "copyFile"),
@@ -385,6 +461,8 @@ Object Init(Env env, Object exports) {
   exports.Set(String::New(env, "renameFolder"),
 			  Function::New(env, RenameFolder));
 
+  exports.Set(String::New(env, "isFolder"),
+			  Function::New(env, ChechOnFolder));
 
   return exports;
 }

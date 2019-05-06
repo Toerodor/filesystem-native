@@ -3,13 +3,13 @@ var addon = require('bindings')('addon');
 module.exports = {
 	/**
 	 * Copy file or folder
-	 * @param {boolean} isDir 
 	 * @param {string} pathFrom 
 	 * @param {string} pathTo 
 	 * @param {boolean} override 
 	 * @returns {boolean}
 	 */
-  copy: function (isDir, pathFrom, pathTo, override) {
+  copy: function (pathFrom, pathTo, override) {
+    let isDir = addon.isFolder(path);
     if (isDir) {
       return addon.copyFolder(pathFrom, pathTo, override)
     } else {
@@ -20,14 +20,14 @@ module.exports = {
 	/**
 	 * Create folder 
 	 * @param {string} path 
-	 * @param {boolean} isDir 
 	 * @returns {boolean}
 	 */
-  create: function (path, isDir = true) {
+  create: function (path) {
+    let isDir = addon.isFolder(path);
     if (isDir) {
       return addon.createFolder(path)
     } else {
-      // return addon.copyFile(pathFrom, pathTo, override)
+      return addon.createFile(path)
     }
   },
 
@@ -36,20 +36,21 @@ module.exports = {
 	 * @param {string} path 
 	 * @param {string} newName 
 	 */
-  rename: function (isDir, path, newName, override) {
-      if (isDir) {
-          return addon.renameFolder(path, newName, override)
-      } else {
-          return addon.renameFile(path, newName, override)
-      }
+  rename: function (path, newName, override) {
+    let isDir = addon.isFolder(path);
+    if (isDir) {
+        return addon.renameFolder(path, newName, override)
+    } else {
+        return addon.renameFile(path, newName, override)
+    }
   },
 
 	/**
 	 * Delete file or folder
 	 * @param {string} path 
-	 * @param {boolean} isDir 
 	 */
-  delete: function (path, isDir) {
+  delete: function (path) {
+    let isDir = addon.isFolder(path);
     if (isDir) {
       return addon.deleteFolder(path)
     } else {
@@ -63,6 +64,21 @@ module.exports = {
 	 * @param {number} timeZone
 	 */
   scanDir: function (path, timeZone) {
-    return addon.folderInfo(path, timeZone)
+    let isDir = addon.isFolder(path);
+    if(isDir) {
+      let obj = addon.folderInfo(path, timeZone);
+      return Object.keys(obj).map(function (key) {
+        return obj[key];
+      });
+    } else {
+      return [];
+    }
+  },
+
+  diskInfo: function () {
+    let obj = addon.diskInfo();
+    return Object.keys(obj).map(function (key) {
+      return obj[key];
+    });
   }
 };
