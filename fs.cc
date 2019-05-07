@@ -9,6 +9,12 @@
 
 #pragma comment(lib, "user32.lib")
 
+#ifndef _DEBUG
+#define DEBUG(x) 
+#else
+#define DEBUG(x) do { std::cerr << x << std::endl; } while (0)
+#endif
+
 namespace fs = std::experimental::filesystem;
 using namespace Napi;
 
@@ -103,8 +109,9 @@ Value InfoDiskInSystem(const CallbackInfo& info) {
 	return sysInfo;
 }
 
-Object InfoFile(Env env, fs::path filePath) {
+Object InfoFile(Env env, fs::path filePath, int key) {
 	Object fileInfo = Object::New(env);
+	fileInfo.Set("key", key);
 
 	const bool isDir = fs::is_directory(filePath);
 	fileInfo.Set("isDir", isDir);
@@ -115,15 +122,23 @@ Object InfoFile(Env env, fs::path filePath) {
 	const fs::path fileFullName = filePath.filename();
 	fileInfo.Set("fullName", fileFullName.u8string());
 
-	if (!isDir) {
-		const fs::path fileName = filePath.stem();
-		fileInfo.Set("name", fileName.u8string());
+	const fs::path fileName = filePath.stem();
+	fileInfo.Set("name", fileName.u8string());
+
+	if (!isDir) 
+	{
+		if (filePath.extension() == ".sys")
+			return Object::New(env);
 
 		const fs::path fileExtension = filePath.extension();
-		fileInfo.Set("ext", fileExtension.u8string());
+		fileInfo.Set("ext", fileExtension.u8string().erase(0,1));
 
 		const int fileSize = fs::file_size(filePath);
 		fileInfo.Set("size", fileSize);
+	} 
+	else 
+	{
+		fileInfo.Set("ext", "folder");
 	}
 
 	struct stat fileStatInfo;
@@ -398,7 +413,6 @@ Value InfoFolderFromPath(const CallbackInfo& info) {
 
 	std::string arg0 = info[0].As<Napi::String>().ToString();
 	fs::path filePath = fs::path(arg0);
-	Object arr = Object::New(env);
 
 	_timeZone = info[1].As<Napi::Number>().ToNumber();
 
@@ -406,17 +420,21 @@ Value InfoFolderFromPath(const CallbackInfo& info) {
 	{
 		if (fs::is_directory(filePath)) {
 			int index = 0;
-			for (auto& p : fs::directory_iterator(filePath)) {
-				arr.Set(index, InfoFile(env, p.path()));
+			Object arr = Object::New(env);
+
+			for (auto& p : fs::directory_iterator(filePath)) {	
+				arr.Set(index, InfoFile(env, p.path(), index));
 				index++;
 			}
-		}
 
-		return arr;
+			return arr;
+		}
+		
+		return String::New(env, "Error");
 	}
 	catch (...)
 	{
-		return arr;
+		return String::New(env, "Error");
 	}
 }
 
